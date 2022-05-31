@@ -66,7 +66,7 @@ instance <- createCohortDiagnosticsModuleSpecifications(runInclusionStatistics =
                                                         runIncidenceRate = TRUE,
                                                         runCohortRelationship = TRUE,
                                                         runTemporalCohortCharacterization = TRUE,
-                                                        temporalCovariateSettings = "$ref: TemporalCovariateSettings",
+                                                        temporalCovariateSettings = createReference("https://raw.githubusercontent.com/schuemie/JsonSchemaTest/main/TemporalCovariateSettings.json"),
                                                         incremental = FALSE)$settings
 json <- generateJsonSchema(createFunction, instance)
 write(json, "CohortDiagnosticSpecifications.json")

@@ -47,30 +47,34 @@ reflect <- function(object, argumentInfo = NULL) {
     }
     properties <- list()
     for (name in names(object)) {
-      properties[[name]] <- reflect(object[[name]])
-      if (!is.null(argumentInfo)) {
-        info <- argumentInfo %>%
-          filter(.data$name == !!name)
-        # Workaround for covariate settings, where 'use' is dropped:
-        if (nrow(info) == 0) {
+      if (is(object[[name]], "jsonSchemaReference")) {
+        properties[[name]] <- list("$ref" = as.character(object[[name]]))
+      } else {
+        properties[[name]] <- reflect(object[[name]])
+        if (!is.null(argumentInfo)) {
           info <- argumentInfo %>%
-            filter(.data$name == sprintf("use%s", !!name))
-        }
-        if (nrow(info) == 1) {
-          if (info$help != "") {
-            properties[[name]]$description <- gsub("(^ +)|( +$)", "", info$help)
+            filter(.data$name == !!name)
+          # Workaround for covariate settings, where 'use' is dropped:
+          if (nrow(info) == 0) {
+            info <- argumentInfo %>%
+              filter(.data$name == sprintf("use%s", !!name))
           }
-          if (info$default != "") {
-            if (info$default == "c()") {
-              info$default <- c()
-            } else if (properties[[name]]$type == "boolean") {
-              info$default <- as.logical(info$default)
-            } else if (properties[[name]]$type == "number") {
-              info$default <- as.numeric(info$default)
-            } else if (properties[[name]]$type == "integer") {
-              info$default <- as.integer(info$default)
+          if (nrow(info) == 1) {
+            if (info$help != "") {
+              properties[[name]]$description <- gsub("(^ +)|( +$)", "", info$help)
             }
-            properties[[name]]$default <- info$default
+            if (info$default != "") {
+              if (info$default == "c()") {
+                info$default <- c()
+              } else if (properties[[name]]$type == "boolean") {
+                info$default <- as.logical(info$default)
+              } else if (properties[[name]]$type == "number") {
+                info$default <- as.numeric(info$default)
+              } else if (properties[[name]]$type == "integer") {
+                info$default <- as.integer(info$default)
+              }
+              properties[[name]]$default <- info$default
+            }
           }
         }
       }
@@ -95,12 +99,14 @@ reflect <- function(object, argumentInfo = NULL) {
   return(objectReflection)
 }
 
-
-
-
 generateJsonSchema <- function(createFunction, instance) {
   argumentInfo <- getArgumentInfo(createFunction)
   reflection <- reflect(instance, argumentInfo)
   json <- jsonlite::toJSON(reflection, pretty = TRUE, force = TRUE, null = "null", auto_unbox = TRUE)
   return(json)
+}
+
+createReference <- function(url) {
+  class(url) <- "jsonSchemaReference"
+  return(url)
 }
